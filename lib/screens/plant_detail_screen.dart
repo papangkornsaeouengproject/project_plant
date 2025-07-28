@@ -1,9 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../pages/plant_info_page.dart';
 import '../pages/light_info_page.dart';
 import '../pages/water_info_page.dart';
 
 class PlantDetailScreen extends StatefulWidget {
+  final String imagePath;
+
+  const PlantDetailScreen({Key? key, required this.imagePath})
+    : super(key: key);
+
   @override
   _PlantDetailScreenState createState() => _PlantDetailScreenState();
 }
@@ -67,7 +73,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                 ),
               ],
               image: DecorationImage(
-                image: AssetImage('assets/dracaena.jpg'),
+                image: AssetImage('assets/dracaena.jpg'), // เปลี่ยนตรงนี้
                 fit: BoxFit.cover,
               ),
             ),
