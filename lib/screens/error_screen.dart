@@ -10,7 +10,7 @@ class ErrorScreen extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/plant_bg.jpg'),
+                image: AssetImage('assets/dracaena.jpg'),
                 fit: BoxFit.cover,
               ),
             ),
@@ -67,7 +67,7 @@ class ErrorScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'ไม่รู้จ่ายใหม่อีกครั้ง',
+                    'ไม่รู้ถ่ายใหม่อีกครั้ง',
                     style: TextStyle(fontSize: 16, color: Colors.black87),
                   ),
                   SizedBox(height: 20),

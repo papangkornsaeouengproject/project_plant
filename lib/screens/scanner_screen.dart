@@ -5,10 +5,15 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:io';
 
-// Import screens ที่แยกออกมา
+// Import screens และ components ที่แยกออกมา
 import '../screens/plant_detail_screen.dart';
 import '../screens/error_screen.dart';
 import '../painters/crosshair_painter.dart';
+import '../widgets/camera_overlay.dart';
+import '../widgets/bottom_controls.dart';
+import '../widgets/processing_overlay.dart';
+import '../services/plant_analyzer.dart';
+import '../screens/plant_scan_result_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
   @override
@@ -26,6 +31,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   late AnimationController _animationController;
   late Animation<double> _focusAnimation;
   final ImagePicker _picker = ImagePicker();
+  final PlantAnalyzer _plantAnalyzer = PlantAnalyzer();
 
   @override
   void initState() {
@@ -87,33 +93,27 @@ class _ScannerScreenState extends State<ScannerScreen>
       // Capture image
       final XFile image = await _cameraController!.takePicture();
 
-      // Simulate plant analysis processing
-      await _processPlantImage(image.path);
+      // Process image using PlantAnalyzer
+      await _plantAnalyzer.processPlantImage(
+        imagePath: image.path,
+        onSuccess: (result) {
+          setState(() => _isProcessing = false);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PlantScanResultScreen(scannedPlantName: 'dracaena',
+      accuracy: 87,),
+            ),
+          );
+        },
+        onError: () {
+          setState(() => _isProcessing = false);
+          _showError();
+        },
+      );
     } catch (e) {
       print('Error capturing image: $e');
       setState(() => _isProcessing = false);
-      _showError();
-    }
-  }
-
-  Future<void> _processPlantImage(String imagePath) async {
-    // TODO: ใส่ Roboflow AI model ตรงนี้
-    // Simulate AI processing time
-    await Future.delayed(Duration(seconds: 3));
-
-    setState(() => _isProcessing = false);
-
-    // Simulate random success/failure for demo
-    final isSuccess = DateTime.now().millisecond % 3 != 0;
-
-    if (isSuccess) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PlantDetailScreen(imagePath: imagePath),
-        ),
-      );
-    } else {
       _showError();
     }
   }
@@ -129,7 +129,23 @@ class _ScannerScreenState extends State<ScannerScreen>
 
       if (image != null) {
         setState(() => _isProcessing = true);
-        await _processPlantImage(image.path);
+        await _plantAnalyzer.processPlantImage(
+          imagePath: image.path,
+          onSuccess: (result) {
+            setState(() => _isProcessing = false);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PlantScanResultScreen (scannedPlantName: 'dracaena',
+      accuracy: 87,),
+              ),
+            );
+          },
+          onError: () {
+            setState(() => _isProcessing = false);
+            _showError();
+          },
+        );
       }
     } catch (e) {
       print('Error picking image: $e');
@@ -165,6 +181,8 @@ class _ScannerScreenState extends State<ScannerScreen>
       MaterialPageRoute(builder: (context) => ErrorScreen()),
     );
   }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -204,9 +222,13 @@ class _ScannerScreenState extends State<ScannerScreen>
       body: Stack(
         children: [
           _buildCameraView(),
-          _buildCameraOverlay(),
-          if (_isProcessing) _buildProcessingOverlay(),
-          _buildBottomControls(),
+          CameraOverlay(),
+          if (_isProcessing) ProcessingOverlay(),
+          BottomControls(
+            onCapture: _captureAndAnalyze,
+            onGallery: _pickFromGallery
+      
+          ),
         ],
       ),
     );
@@ -246,343 +268,6 @@ class _ScannerScreenState extends State<ScannerScreen>
           );
         },
       ),
-    );
-  }
-
-  Widget _buildCameraOverlay() {
-    return Container(
-      child: Stack(
-        children: [
-          // Dark overlay with transparent center
-          Container(
-            decoration: BoxDecoration(color: Colors.black.withOpacity(0.4)),
-          ),
-          // Focus guide
-          _buildFocusGuide(),
-          // Instructions
-          _buildInstructions(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFocusGuide() {
-    return Center(
-      child: Container(
-        width: 300,
-        height: 300,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.greenAccent.withOpacity(0.8),
-            width: 3,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.greenAccent.withOpacity(0.3),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Corner indicators
-            _buildCornerIndicators(),
-            // Center cross
-            Center(
-              child: Container(
-                width: 40,
-                height: 40,
-                child: CustomPaint(painter: CrosshairPainter()),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCornerIndicators() {
-    return Stack(
-      children: [
-        // Top corners
-        Positioned(top: -2, left: -2, child: _buildCornerIndicator()),
-        Positioned(
-          top: -2,
-          right: -2,
-          child: Transform.rotate(
-            angle: 1.5708,
-            child: _buildCornerIndicator(),
-          ),
-        ),
-        // Bottom corners
-        Positioned(
-          bottom: -2,
-          left: -2,
-          child: Transform.rotate(
-            angle: -1.5708,
-            child: _buildCornerIndicator(),
-          ),
-        ),
-        Positioned(
-          bottom: -2,
-          right: -2,
-          child: Transform.rotate(
-            angle: 3.14159,
-            child: _buildCornerIndicator(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCornerIndicator() {
-    return Container(
-      width: 25,
-      height: 25,
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.greenAccent, width: 4),
-          left: BorderSide(color: Colors.greenAccent, width: 4),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInstructions() {
-    return Positioned(
-      top: MediaQuery.of(context).size.height * 0.15,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: Colors.greenAccent.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.local_florist,
-                    color: Colors.greenAccent,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'ถ่ายรูปดอกไม้หรือใบพืชในกรอบ',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProcessingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.85),
-      child: Center(
-        child: Container(
-          margin: EdgeInsets.all(32),
-          padding: EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.greenAccent.withOpacity(0.4),
-                blurRadius: 25,
-                spreadRadius: 8,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                child: Stack(
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                      strokeWidth: 5,
-                    ),
-                    Center(
-                      child: Icon(
-                        Icons.local_florist,
-                        color: Colors.green,
-                        size: 35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 24),
-              Text(
-                '🔍 กำลังวิเคราะห์พืช',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade800,
-                ),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'กำลังจำแนกชนิดพืชจากรูปภาพ',
-                style: TextStyle(fontSize: 16, color: Colors.black87),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 8),
-              Text(
-                'โปรดรอสักครู่...',
-                style: TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomControls() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-          ),
-        ),
-        child: SafeArea(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildControlButton(
-                icon: Icons.photo_library,
-                label: 'คลัง',
-                onPressed: _pickFromGallery,
-              ),
-              _buildCaptureButton(),
-              _buildControlButton(
-                icon: Icons.history,
-                label: 'ประวัติ',
-                onPressed: () {
-                  // TODO: Show identification history
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCaptureButton() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: _captureAndAnalyze,
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.greenAccent, Colors.green.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 4),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.greenAccent.withOpacity(0.4),
-                  blurRadius: 15,
-                  spreadRadius: 3,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Icon(Icons.camera_alt, size: 35, color: Colors.white),
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          'ถ่ายรูป',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: onPressed,
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(icon, size: 24, color: Colors.white),
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

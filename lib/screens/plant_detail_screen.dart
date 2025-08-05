@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../pages/plant_info_page.dart';
-import '../pages/light_info_page.dart';
-import '../pages/water_info_page.dart';
+
 
 class PlantDetailScreen extends StatefulWidget {
   final String imagePath;
@@ -18,9 +16,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
   final List<Widget> _pages = [
-    PlantInfoPage(),
-    LightInfoPage(),
-    WaterInfoPage(),
+    
   ];
 
   @override
@@ -47,7 +43,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
           ),
         ),
         title: Text(
-          'พบต้นไม้แล้ว! (87%)',
+          'พบต้นไม้แล้ว! (88%)',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
