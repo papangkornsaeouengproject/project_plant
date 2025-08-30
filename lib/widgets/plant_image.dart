@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
 class PlantImage extends StatelessWidget {
-  final String plantIcon;
+  final String? plantIcon; // สำหรับ Emoji fallback
+  final String? imageUrl;  // URL จาก Firebase
 
   const PlantImage({
     Key? key,
     this.plantIcon = "🌿",
+    this.imageUrl,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(16),
-      height: 200,
+      height: 350,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -29,10 +31,27 @@ class PlantImage extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          plantIcon,
-          style: const TextStyle(fontSize: 64),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Center(
+          child: imageUrl != null && imageUrl!.isNotEmpty
+              ? Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.broken_image, size: 64, color: Colors.grey);
+                  },
+                )
+              : Text(
+                  plantIcon ?? "🌿",
+                  style: const TextStyle(fontSize: 64),
+                ),
         ),
       ),
     );

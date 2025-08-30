@@ -1,55 +1,62 @@
-import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 class PlantAnalyzer {
+  final String apiUrl = 'http://10.0.2.2:8000/predict';
+
   Future<void> processPlantImage({
     required String imagePath,
     required Function(PlantAnalysisResult) onSuccess,
     required Function() onError,
   }) async {
     try {
-      // TODO: ใส่ Roboflow AI model ตรงนี้
-      // Simulate AI processing time
-      await Future.delayed(Duration(seconds: 3));
+      var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
 
-      // Simulate random success/failure for demo
-      final random = Random();
-      final isSuccess = random.nextBool();
+      var mimeType = lookupMimeType(imagePath) ?? 'application/octet-stream';
+      var mimeSplit = mimeType.split('/');
 
-      if (isSuccess) {
-        // Create mock result
-        final result = PlantAnalysisResult(
-          plantName: _generateMockPlantName(),
-          confidence: 0.85 + (random.nextDouble() * 0.15), // 85-100%
-          description: _generateMockDescription(),
-          imagePath: imagePath,
-        );
-        onSuccess(result);
+      var multipartFile = await http.MultipartFile.fromPath(
+        'file',
+        imagePath,
+        contentType: MediaType(mimeSplit[0], mimeSplit[1]),
+      );
+
+      request.files.add(multipartFile);
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['predictions'].isNotEmpty) {
+          final pred = data['predictions'][0];
+
+          final result = PlantAnalysisResult(
+            plantName: pred['name'],
+            confidence: pred['confidence'],
+            description: _generateMockDescription(pred['name']),
+            imagePath: imagePath,
+          );
+          onSuccess(result);
+        } else {
+          print("❌ ไม่มีการตรวจพบพืชในภาพ");
+          onError();
+        }
       } else {
+        print('❌ การเรียก API ล้มเหลว: ${response.statusCode}');
         onError();
       }
     } catch (e) {
-      print('Error in plant analysis: $e');
+      print('❌ เกิดข้อผิดพลาด: $e');
       onError();
     }
   }
 
-  String _generateMockPlantName() {
-    final plants = [
-      'ดอกไม้สีแดง',
-      'ใบไผ่',
-      'ดอกบัว',
-      'ต้นมะม่วง',
-      'ดอกรักเร่',
-      'ใบโบ๊ะ',
-      'ดอกกุหลาบ',
-      'ต้นกล้วย',
-    ];
-    return plants[Random().nextInt(plants.length)];
-  }
-
-  String _generateMockDescription() {
-    return 'พืชชนิดนี้มีความสวยงามและเจริญเติบโตได้ดีในสภาพอากาศร้อนชื้น เหมาะสำหรับการปลูกในสวนหรือกระถาง';
+  String _generateMockDescription(String name) {
+    return 'พืชชนิด "$name" เจริญเติบโตได้ดีในอากาศร้อนชื้น เหมาะแก่การปลูกในบ้านหรือสวน.';
   }
 }
 

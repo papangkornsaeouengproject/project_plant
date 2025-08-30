@@ -10,8 +10,8 @@ import '../widgets/action_buttons.dart';
 import '../widgets/detail_modal.dart';
 
 class PlantScanResultScreen extends StatefulWidget {
-  final String scannedPlantName; // ชื่อพืชที่สแกนได้
-  final int accuracy; // ความแม่นยำจากการสแกน
+  final String scannedPlantName;
+  final int accuracy;
 
   const PlantScanResultScreen({
     Key? key,
@@ -42,55 +42,39 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
         _error = null;
       });
 
-      // Load จาก Firebase
       PlantData? data = await FirebaseService.getPlantData(widget.scannedPlantName);
-      
+
       if (data != null) {
-        // อัพเดท accuracy จากการสแกน
         data = PlantData(
           name: data.name,
           engName: data.engName,
           scienceName: data.scienceName,
           family: data.family,
-          accuracy: widget.accuracy, // ใช้ค่าจากการสแกน
+          accuracy: widget.accuracy,
           meaningName: data.meaningName,
           water: data.water,
           light: data.light,
           advantageFirst: data.advantageFirst,
           advantageSecond: data.advantageSecond,
           advantageThird: data.advantageThird,
+          watering_indoor: data.watering_indoor,
+          watering_outdoor: data.watering_outdoor,
+          light_detail: data.light_detail,
+          how_to_watering: data.how_to_watering,
+          temp: data.temp,
+          warning: data.warning,
+          image: data.image,
         );
-        
+
         setState(() {
           _plantData = data;
           _isLoading = false;
         });
       } else {
-        // ถ้าไม่เจอใน Firebase ใช้ sample data
-        // PlantData? sampleData = samplePlantDatabase[widget.scannedPlantName.toLowerCase()];
-        // if (sampleData != null) {
-        //   setState(() {
-        //     _plantData = PlantData(
-        //       name: sampleData.name,
-        //       engName: sampleData.engName,
-        //       scienceName: sampleData.scienceName,
-        //       family: sampleData.family,
-        //       accuracy: widget.accuracy,
-        //       meaningName: sampleData.meaningName,
-        //       water: sampleData.water,
-        //       light: sampleData.light,
-        //       advantageFirst: sampleData.advantageFirst,
-        //       advantageSecond: sampleData.advantageSecond,
-        //       advantageThird: sampleData.advantageThird,
-        //     );
-        //     _isLoading = false;
-        //   });
-        // } else {
-        //   setState(() {
-        //     _error = 'ไม่พบข้อมูลของพืชชนิดนี้';
-        //     _isLoading = false;
-        //   });
-        // }
+        setState(() {
+          _error = 'ไม่พบข้อมูลของพืช "${widget.scannedPlantName}"';
+          _isLoading = false;
+        });
       }
     } catch (e) {
       setState(() {
@@ -109,32 +93,6 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
       _showDetail = type;
     });
   }
-
-  // Future<void> _handleSave() async {
-  //   if (_plantData != null) {
-  //     try {
-  //       await FirebaseService.saveScanHistory(_plantData!);
-        
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           const SnackBar(
-  //             content: Text('บันทึกข้อมูลพืชเรียบร้อยแล้ว'),
-  //             backgroundColor: Colors.green,
-  //           ),
-  //         );
-  //       }
-  //     } catch (e) {
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(
-  //             content: Text('เกิดข้อผิดพลาด: $e'),
-  //             backgroundColor: Colors.red,
-  //           ),
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
 
   void _handleScanNew() {
     Navigator.popUntil(context, (route) => route.isFirst);
@@ -189,17 +147,13 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
                           child: SingleChildScrollView(
                             child: Column(
                               children: [
-                                const PlantImage(),
+                                PlantImage(imageUrl: _plantData!.image), // ✅ ส่ง imageUrl เข้ามา
                                 PlantName(name: _plantData!.name),
                                 CareIcons(
                                   plantData: _plantData!,
                                   onIconTap: _handleIconTap,
                                 ),
                                 PlantDetails(plantData: _plantData!),
-                                // ActionButtons(
-                                  // onSave: _handleSave,
-                                //   onScanNew: _handleScanNew,
-                                // ),
                               ],
                             ),
                           ),

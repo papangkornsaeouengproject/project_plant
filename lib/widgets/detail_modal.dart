@@ -56,42 +56,57 @@
       );
     }
 
-    Map<String, dynamic> _getDetailContent() {
-      switch (type) {
-        case 'plant':
-          return {
-            'title': 'ข้อมูลพืช',
-            'content': Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDetailItem('ชื่อทางวิทยาศาสตร์', plantData.scienceName),
-                const SizedBox(height: 12),
-                _buildDetailItem('วงศ์', plantData.family),
-                const SizedBox(height: 12),
-                _buildDetailItem('ชื่อภาษาอังกฤษ', plantData.engName),
-              ],
-            ),
-          };
-        case 'water':
-          return {
-            'title': 'การรดน้ำ',
-            'content': Text(
-              plantData.water,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-          };
-        case 'light':
-          return {
-            'title': 'แสงแดด',
-            'content': Text(
-              plantData.light,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-          };
-        default:
-          return {'title': '', 'content': const SizedBox()};
-      }
-    }
+   Map<String, dynamic> _getDetailContent() {
+  switch (type) {
+    case 'plant':
+      return {
+        'title': 'ข้อมูลพืช',
+        'content': Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailItem('ชื่อทางวิทยาศาสตร์', plantData.scienceName),
+            const SizedBox(height: 12),
+            _buildDetailItem('วงศ์', plantData.family),
+            const SizedBox(height: 12),
+            _buildDetailItem('ชื่อภาษาอังกฤษ', plantData.engName),
+          ],
+        ),
+      };
+
+    case 'water':
+      return {
+        'title': 'การรดน้ำ',
+        'content': Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailItem('การรดน้ำทั่วไป', plantData.water),
+            const SizedBox(height: 12),
+            _buildDetailItem('การรดน้ำในร่ม', plantData.watering_indoor),
+            const SizedBox(height: 12),
+            _buildDetailItem('การรดน้ำกลางแจ้ง', plantData.watering_outdoor),
+          ],
+        ),
+      };
+
+    case 'light':
+      return {
+        'title': 'แสงแดด',
+        'content': Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailItem('สภาพแสง', plantData.light),
+            const SizedBox(height: 12),
+            _buildDetailItem('รายละเอียดแสง', plantData.light_detail),
+            const SizedBox(height: 12),
+            _buildDetailItem('คำเตือน', plantData.warning),
+          ],
+        ),
+      };
+
+    default:
+      return {'title': '', 'content': const SizedBox()};
+  }
+}
 
     Widget _buildDetailItem(String label, String value) {
       return Column(

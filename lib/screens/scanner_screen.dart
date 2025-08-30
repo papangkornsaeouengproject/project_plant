@@ -101,8 +101,10 @@ class _ScannerScreenState extends State<ScannerScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PlantScanResultScreen(scannedPlantName: 'dracaena',
-      accuracy: 87,),
+              builder: (context) => PlantScanResultScreen(
+                scannedPlantName: result.plantName,
+                accuracy: (result.confidence * 100).toInt(),
+              ),
             ),
           );
         },
@@ -136,8 +138,10 @@ class _ScannerScreenState extends State<ScannerScreen>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PlantScanResultScreen (scannedPlantName: 'dracaena',
-      accuracy: 87,),
+                builder: (context) => PlantScanResultScreen(
+                  scannedPlantName: result.plantName,
+                  accuracy: (result.confidence * 100).toInt(),
+                ),
               ),
             );
           },
@@ -182,8 +186,6 @@ class _ScannerScreenState extends State<ScannerScreen>
     );
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -226,8 +228,7 @@ class _ScannerScreenState extends State<ScannerScreen>
           if (_isProcessing) ProcessingOverlay(),
           BottomControls(
             onCapture: _captureAndAnalyze,
-            onGallery: _pickFromGallery
-      
+            onGallery: _pickFromGallery,
           ),
         ],
       ),
