@@ -1,4 +1,7 @@
+import 'dart:io' show File;                 // ✅ ใช้สำหรับ Image.file (Android/iOS)
+import 'package:flutter/foundation.dart';   // ✅ ใช้ kIsWeb guard
 import 'package:flutter/material.dart';
+
 import '../models/plant_data.dart';
 import '../services/firebase_service.dart';
 import '../widgets/plant_header.dart';
@@ -6,17 +9,21 @@ import '../widgets/plant_image.dart';
 import '../widgets/plant_name.dart';
 import '../widgets/care_icons.dart';
 import '../widgets/plant_details.dart';
-import '../widgets/action_buttons.dart';
 import '../widgets/detail_modal.dart';
+import '../services/plant_analyzer.dart';
 
 class PlantScanResultScreen extends StatefulWidget {
-  final String scannedPlantName; // ชื่อพืชที่สแกนได้
-  final int accuracy; // ความแม่นยำจากการสแกน
+  final String scannedPlantName;
+  final int accuracy;
+  final String imagePath; // path ไฟล์ที่ถ่ายจากกล้อง/แกลเลอรี (โลคัล)
+  final List<PredictionResult> allPredictions;
 
   const PlantScanResultScreen({
     Key? key,
     required this.scannedPlantName,
     required this.accuracy,
+    required this.imagePath,
+    required this.allPredictions,
   }) : super(key: key);
 
   @override
@@ -42,55 +49,40 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
         _error = null;
       });
 
-      // Load จาก Firebase
-      PlantData? data = await FirebaseService.getPlantData(widget.scannedPlantName);
-      
-      if (data != null) {
-        // อัพเดท accuracy จากการสแกน
-        data = PlantData(
-          name: data.name,
-          engName: data.engName,
-          scienceName: data.scienceName,
-          family: data.family,
-          accuracy: widget.accuracy, // ใช้ค่าจากการสแกน
-          meaningName: data.meaningName,
-          water: data.water,
-          light: data.light,
-          advantageFirst: data.advantageFirst,
-          advantageSecond: data.advantageSecond,
-          advantageThird: data.advantageThird,
+      final dataFromFirebase =
+          await FirebaseService.getPlantData(widget.scannedPlantName);
+
+      if (dataFromFirebase != null) {
+        final dataWithAccuracy = PlantData(
+          name: dataFromFirebase.name,
+          engName: dataFromFirebase.engName,
+          scienceName: dataFromFirebase.scienceName,
+          family: dataFromFirebase.family,
+          accuracy: widget.accuracy,
+          meaningName: dataFromFirebase.meaningName,
+          water: dataFromFirebase.water,
+          light: dataFromFirebase.light,
+          advantageFirst: dataFromFirebase.advantageFirst,
+          advantageSecond: dataFromFirebase.advantageSecond,
+          advantageThird: dataFromFirebase.advantageThird,
+          watering_indoor: dataFromFirebase.watering_indoor,
+          watering_outdoor: dataFromFirebase.watering_outdoor,
+          light_detail: dataFromFirebase.light_detail,
+          how_to_watering: dataFromFirebase.how_to_watering,
+          temp: dataFromFirebase.temp,
+          warning: dataFromFirebase.warning,
+          image: dataFromFirebase.image, // ✅ URL รูปจากฐานข้อมูล
         );
-        
+
         setState(() {
-          _plantData = data;
+          _plantData = dataWithAccuracy;
           _isLoading = false;
         });
       } else {
-        // ถ้าไม่เจอใน Firebase ใช้ sample data
-        // PlantData? sampleData = samplePlantDatabase[widget.scannedPlantName.toLowerCase()];
-        // if (sampleData != null) {
-        //   setState(() {
-        //     _plantData = PlantData(
-        //       name: sampleData.name,
-        //       engName: sampleData.engName,
-        //       scienceName: sampleData.scienceName,
-        //       family: sampleData.family,
-        //       accuracy: widget.accuracy,
-        //       meaningName: sampleData.meaningName,
-        //       water: sampleData.water,
-        //       light: sampleData.light,
-        //       advantageFirst: sampleData.advantageFirst,
-        //       advantageSecond: sampleData.advantageSecond,
-        //       advantageThird: sampleData.advantageThird,
-        //     );
-        //     _isLoading = false;
-        //   });
-        // } else {
-        //   setState(() {
-        //     _error = 'ไม่พบข้อมูลของพืชชนิดนี้';
-        //     _isLoading = false;
-        //   });
-        // }
+        setState(() {
+          _error = 'ไม่พบข้อมูลของพืช "${widget.scannedPlantName}"';
+          _isLoading = false;
+        });
       }
     } catch (e) {
       setState(() {
@@ -100,51 +92,9 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
     }
   }
 
-  void _handleBack() {
-    Navigator.pop(context);
-  }
-
-  void _handleIconTap(String type) {
-    setState(() {
-      _showDetail = type;
-    });
-  }
-
-  // Future<void> _handleSave() async {
-  //   if (_plantData != null) {
-  //     try {
-  //       await FirebaseService.saveScanHistory(_plantData!);
-        
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           const SnackBar(
-  //             content: Text('บันทึกข้อมูลพืชเรียบร้อยแล้ว'),
-  //             backgroundColor: Colors.green,
-  //           ),
-  //         );
-  //       }
-  //     } catch (e) {
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(
-  //             content: Text('เกิดข้อผิดพลาด: $e'),
-  //             backgroundColor: Colors.red,
-  //           ),
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
-
-  void _handleScanNew() {
-    Navigator.popUntil(context, (route) => route.isFirst);
-  }
-
-  void _closeModal() {
-    setState(() {
-      _showDetail = null;
-    });
-  }
+  void _handleBack() => Navigator.pop(context);
+  void _handleIconTap(String type) => setState(() => _showDetail = type);
+  void _closeModal() => setState(() => _showDetail = null);
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +121,7 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: _handleScanNew,
+                        onPressed: () => Navigator.pop(context),
                         child: const Text('ลองสแกนใหม่'),
                       ),
                     ],
@@ -188,18 +138,83 @@ class _PlantScanResultScreenState extends State<PlantScanResultScreen> {
                         Expanded(
                           child: SingleChildScrollView(
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const PlantImage(),
+                                // ✅ รูปหลักจากฐานข้อมูล (URL)
+                                PlantImage(imageUrl: _plantData!.image),
+
+                                // ✅ พรีวิว "รูปที่ถ่าย" (เฉพาะมือถือ/แท็บเล็ต)
+                                if (!kIsWeb && (widget.imagePath).isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Card(
+                                      elevation: 1,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'ภาพที่ถ่าย',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(10),
+                                              child: Image.file(
+                                                File(widget.imagePath),
+                                                height: 120,
+                                                width: double.infinity,
+                                                  fit: BoxFit.contain,   // ✅ เห็นทั้งภาพ ไม่โดนครอป
+                                                errorBuilder: (_, __, ___) => const SizedBox(
+                                                  height: 120,
+                                                  child: Center(
+                                                    child: Icon(Icons.broken_image, size: 40),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                // ชื่อและรายละเอียดอื่น ๆ
                                 PlantName(name: _plantData!.name),
                                 CareIcons(
                                   plantData: _plantData!,
                                   onIconTap: _handleIconTap,
                                 ),
                                 PlantDetails(plantData: _plantData!),
-                                // ActionButtons(
-                                  // onSave: _handleSave,
-                                //   onScanNew: _handleScanNew,
-                                // ),
+
+                                const SizedBox(height: 16),
+                                const Center(
+                                  child: Text(
+                                    'ผลทำนายทั้งหมด',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: widget.allPredictions
+                                        .map((p) => Text(
+                                              '• ${p.label}: ${p.confidence.toStringAsFixed(1)}%',
+                                              style: const TextStyle(fontSize: 13),
+                                            ))
+                                        .toList(),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
                               ],
                             ),
                           ),

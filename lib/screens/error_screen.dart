@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class ErrorScreen extends StatelessWidget {
+  final String message; // เพิ่ม parameter
+
+  const ErrorScreen({Key? key, required this.message}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,17 +62,13 @@ class ErrorScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'Cant find this Plan',
+                    message, // ใช้ข้อความจาก parameter
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.red,
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'ไม่รู้ถ่ายใหม่อีกครั้ง',
-                    style: TextStyle(fontSize: 16, color: Colors.black87),
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
@@ -76,10 +76,7 @@ class ErrorScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 12,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
